@@ -80,8 +80,8 @@ class GUI(GeneralUserInterface):
         tab1 = ttk.Frame(self.tab_control)
         tab2 = ttk.Frame(self.tab_control)
 
-        self.tab_control.add(tab2, text='Active contour')
-        self.tab_control.add(tab1, text='Welcome')
+        self.tab_control.add(tab1, text='Snake')
+        self.tab_control.add(tab2, text='Morphological Snakes')
 
         # self.menu = Menu(tab2)
         # new_item = Menu(self.menu)
@@ -91,22 +91,35 @@ class GUI(GeneralUserInterface):
         # self.window.config(menu=self.menu)
 
         # tab 1
-        Label(tab1, text='hello').grid(column=0, row=2)
-        Button(tab1, text='hello').grid(column=1, row=0)
-        self.entry = Entry(tab1)
-        self.entry.grid(column=1, row=1)
+        self.set_size_x_tab1 = self.block_entry(
+            tab1, 'Set Size x:', 6, 1, placeholder=768)
+        self.set_size_y_tab1 = self.block_entry(
+            tab1, 'Set Size y:', 5, 1, placeholder=768)
+        self.set_iteration_tab1 = self.block_entry(
+            tab1, 'Set Iteration:', 1, 1, placeholder=10000)
+        self.set_smooth_tab1 = self.block_entry(
+            tab1, 'Set Smooth:', 2, 1, placeholder=3)
+        self.set_threshold_tab1 = self.block_entry(
+            tab1, 'Set Threshold:', 3, 1, placeholder=0.4)
+        self.set_balloon_tab1 = self.block_entry(
+            tab1, 'Set Balloon:', 4, 1, placeholder=-1)
+
+        
+
+        ## Check button
+        self.check_transform_tab1 = BooleanVar(value=True)
+        self.check = Checkbutton(tab1, text='Transform: ', var=self.check_transform_tab1).grid(
+            column=3, row=0, sticky=W, padx=5)
+        # self.check.select()
+
+        # Button
+        Button(tab1, text='run', command=self.get_contour).grid(row=0, column=7,)
 
         # tab2
-
-        # Input
-        list_output_format = ['csv', 'json', 'COCO']
-        self.combo_output_format = self.block_combo(
-            tab2, 'Output_format:', 0, 1, list_output_format)
-
         self.set_size_x = self.block_entry(
-            tab2, 'Set Size x:', 6, 1, placeholder=512)
+            tab2, 'Set Size x:', 6, 1, placeholder=768)
         self.set_size_y = self.block_entry(
-            tab2, 'Set Size y:', 5, 1, placeholder=512)
+            tab2, 'Set Size y:', 5, 1, placeholder=768)
         self.set_iteration = self.block_entry(
             tab2, 'Set Iteration:', 1, 1, placeholder=10000)
         self.set_smooth = self.block_entry(
@@ -137,12 +150,13 @@ class GUI(GeneralUserInterface):
         ### open file
         filetypes = (
             ('image files', '*.jpg'),
+            ('image files', '*.jpeg'),
             ('All files', '*.*')
         )
 
         input_file = fd.askopenfilename(
             title='Open a file',
-            initialdir='.\input_leaf',
+            initialdir='.\data',
             filetypes=filetypes
         )
         
@@ -151,14 +165,14 @@ class GUI(GeneralUserInterface):
         size_y = int(self.set_size_y.get())
         image_size = (size_x, size_y)
 
-        output_format = self.combo_output_format.get()
+        # output_format = self.combo_output_format.get()
         is_transform = self.check_transform.get() 
         
         ### algorithm argument
         iteration = int(self.set_iteration.get())
         smooth = int(self.set_smooth.get())
         threshold = float(self.set_threshold.get())
-        balloon = int(self.set_balloon.get())
+        balloon = float(self.set_balloon.get())
 
         argument = {
             'iterations': iteration,
@@ -182,25 +196,75 @@ class GUI(GeneralUserInterface):
                        argument=argument,
                        is_transform=is_transform)
         
-        if output_format == 'COCO':
-            print('COCO')
-        elif output_format == 'json':
-            print(1)
-        elif output_format == 'csv':
-            # img_array = (img.flatten())
+        # if output_format == 'COCO':
+        #     print('COCO')
+        # elif output_format == 'json':
+        #     print(1)
+        # elif output_format == 'csv':
+        #     # img_array = (img.flatten())
 
-            # img_array  = img_array.reshape(-1, 1).T
-            # np.savetxt(f'{output_file_name}.csv', img_array, delimiter=',')
-            pass
+        #     # img_array  = img_array.reshape(-1, 1).T
+        #     # np.savetxt(f'{output_file_name}.csv', img_array, delimiter=',')
+        #     pass
         
         print('done active contour')
         messagebox.showinfo(title='active contour', message='done')
         return
 
 
-    def find_path_car(self):
-        import find_path.illustration_path
-        print('done')
+    def get_countour_snake(self):
+        filetypes = (
+            ('image files', '*.jpg'),
+            ('image files', '*.jpeg'),
+            ('All files', '*.*')
+        )
+
+        input_file = fd.askopenfilename(
+            title='Open a file',
+            initialdir='.\data',
+            filetypes=filetypes
+        )
+        
+        ### file infor
+        size_x_tab1 = int(self.set_size_x.get())
+        size_y_tab1 = int(self.set_size_y.get())
+        image_size = (size_x_tab1, size_y_tab1)
+
+        # output_format = self.combo_output_format.get()
+        is_transform = self.check_transform_tab1.get() 
+        
+        ### algorithm argument
+        iteration = int(self.set_iteration_tab1.get())
+        smooth = int(self.set_smooth_tab1.get())
+        threshold = float(self.set_threshold_tab1.get())
+        balloon = float(self.set_balloon_tab1.get())
+
+        argument = {
+            'iterations': iteration,
+            'smoothing': smooth,
+            'threshold': threshold,
+            'balloon': balloon
+        }
+        
+        output_folder = './output_images'
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+        input_name_file = input_file.split('/')[-1].split('.')[0] 
+        output_file_name = output_folder + f'/{input_name_file}'
+        output_file = output_file_name + '_output.png'
+
+        img = active_contour(input_file=input_file,
+                       output_file=output_file,
+                       image_size=image_size,
+                       argument=argument,
+                       is_transform=is_transform)
+        
+        # if output_format == 'COCO':
+
+        
+        print('done snake')
+        messagebox.showinfo(title='snake', message='done')
+        return
 
 
 if __name__ == '__main__':
